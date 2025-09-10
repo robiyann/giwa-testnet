@@ -1,0 +1,8 @@
+# abaikan file tertentu
+secret.txt
+password.json
+akun.txt
+# abaikan folder tertentu
+node_modules/
+venv/
+__pycache__/
