@@ -1,7 +1,7 @@
 {
   "rpc_url": "https://sepolia-rpc.giwa.io",
   "akun_file": "akun.txt",
-  "gas_limit": 2000000,
+  "gas_limit": 3000000,
   "max_workers": 1,
   "delay_range": [
     5,

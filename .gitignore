@@ -2,6 +2,7 @@
 secret.txt
 password.json
 akun.txt
+.gitignore
 # abaikan folder tertentu
 node_modules/
 venv/
