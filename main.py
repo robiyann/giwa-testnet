@@ -14,7 +14,7 @@ def print_banner():
     banner = """
     ╔═══════════════════════════════════════════════╗
     ║         CUANDROP GIWA TESTNET AUTOBOT         ║
-    ║                by @developer                  ║
+    ║                by @robiyan                    ║
     ╚═══════════════════════════════════════════════╝
     """
     print(banner)
