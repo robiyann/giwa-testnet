@@ -29,7 +29,7 @@ def show_menu():
     ║  1. Deploy Smart Contract Owlto       ║
     ║  2. Deploy ERC20 Token Owlto          ║
     ║  3. Deploy GMONChain                  ║
-    ║  4. [Coming Soon] Swap Tokens         ║
+    ║  4. Mint omnihub nft                  ║
     ║  5. [Coming Soon] Claim Airdrop       ║
     ║  6. Try All In (1→2→3 per akun)       ║
     ║  0. Exit                              ║
@@ -122,6 +122,22 @@ def deploy_gmonchain(bot, config, accounts):
         print("🎉 GMONChain calls sent for all accounts!")
     else:
         print(f"⚠️  Done with {summary['errors']} errors")
+
+def mint_omnihub_nft_handler(bot, config, accounts):
+    print("\n🖼️  MINT OMNIHUB NFT (skip jika sudah punya)")
+    print("=" * 50)
+    result = bot.mint_omnihub_nft(
+        accounts,
+        gas_limit=config.get("gas_limit", 2_000_000),
+        max_workers=config.get("max_workers", 5),
+    )
+    print("\n📊 Summary:")
+    print(f"   Diproses : {result['processed']}")
+    print(f"   Diskip   : {result['skipped']}")
+    print(f"   TX sent  : {sum(1 for r in result['results'] if r.get('tx_hash'))}")
+    print(f"   ❌ Errors : {sum(1 for r in result['results'] if r.get('error'))}")
+
+
 
 # --- Tambahkan helper ini di bawah import dan di atas fungsi-fungsi deploy ---
 def send_tx_with_nonce(bot, private_key, from_addr, nonce, *,
@@ -310,7 +326,7 @@ def main():
             elif choice == '3':
                 deploy_gmonchain(bot, config, accounts)
             elif choice == '4':
-                print("🔄 Swap Tokens feature coming soon!")
+                mint_omnihub_nft_handler(bot, config, accounts)
             elif choice == '5':
                 print("🪂 Claim Airdrop feature coming soon!")
             elif choice == '6':

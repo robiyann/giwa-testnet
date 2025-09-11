@@ -118,6 +118,150 @@ class MultiAccountFromPK:
                     results.append({"error": str(e)})
         return results
 
+    def send_call_a25_skip_nft(
+        self,
+        accounts,
+        target_contract,
+        nft_contract="0x5893B6684057eaBDeCB400526C8410EAFca6d541",
+        data=None,
+        value_wei=0,
+        gas_limit=2_000_000,
+        max_workers=5,
+    ):
+        """
+        Fitur baru:
+        - Mengecek balanceOf di kontrak NFT tertentu.
+        - Hanya mengirim TX 'data' ke target_contract untuk akun yang NFT-nya == 0.
+        """
+        if data is None:
+            data = (
+                "0xa25ffea8"
+                "0000000000000000000000000000000000000000000000000000000000000000"
+                "0000000000000000000000000000000000000000000000000000000000000001"
+                "0000000000000000000000000000000000000000000000000000000000000000"
+                "0000000000000000000000000000000000000000000000000000000000000080"
+                "0000000000000000000000000000000000000000000000000000000000000000"
+            )
+
+        nft_contract = Web3.to_checksum_address(nft_contract)
+        nft = self.w3.eth.contract(
+            address=nft_contract,
+            abi=[
+                {
+                    "inputs": [{"internalType": "address", "name": "owner", "type": "address"}],
+                    "name": "balanceOf",
+                    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                    "stateMutability": "view",
+                    "type": "function",
+                }
+            ],
+        )
+
+        eligible = []
+        skipped = []
+        print("\n🔎 Memeriksa kepemilikan NFT...")
+        for acc in accounts:
+            try:
+                bal = nft.functions.balanceOf(acc["address"]).call()
+                if int(bal) == 0:
+                    eligible.append(acc)
+                else:
+                    print(f"  ⏭️  Skip {acc['address']} — sudah punya {bal} NFT")
+                    skipped.append({**acc, "nft_balance": int(bal)})
+            except Exception as e:
+                print(f"  ⚠️  Gagal cek {acc['address']}: {e} → tetap diproses")
+                eligible.append(acc)
+
+        if not eligible:
+            print("✅ Semua akun sudah punya NFT — tidak ada transaksi dikirim.")
+            return {"processed": 0, "skipped": len(skipped), "results": []}
+
+        print(f"🚀 Mengirim call ke {len(eligible)} akun...")
+        results = self.send_call_batch(
+            accounts=eligible,
+            to=Web3.to_checksum_address(target_contract),
+            data=data,
+            value_wei=value_wei,
+            gas_limit=gas_limit,
+            max_workers=max_workers,
+        )
+
+        return {
+            "processed": len(eligible),
+            "skipped": len(skipped),
+            "results": results,
+        }
+
+
+    def mint_omnihub_nft(self, accounts, gas_limit=2_000_000, max_workers=5):
+        """
+        Mint Omnihub NFT:
+        - Hardcode target contract & value
+        - Skip akun yang sudah memiliki NFT (balanceOf > 0)
+        """
+
+        # === hardcode target dan value ===
+        target_contract = Web3.to_checksum_address("0x5893B6684057eaBDeCB400526C8410EAFca6d541")
+        value_wei = Web3.to_wei(0.001, "ether")
+        data = (
+            "0xa25ffea8"
+            "0000000000000000000000000000000000000000000000000000000000000000"
+            "0000000000000000000000000000000000000000000000000000000000000001"
+            "0000000000000000000000000000000000000000000000000000000000000000"
+            "0000000000000000000000000000000000000000000000000000000000000080"
+            "0000000000000000000000000000000000000000000000000000000000000000"
+        )
+
+        # cek NFT yang sama dengan target contract
+        nft = self.w3.eth.contract(
+            address=target_contract,
+            abi=[
+                {
+                    "inputs": [{"internalType": "address", "name": "owner", "type": "address"}],
+                    "name": "balanceOf",
+                    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                    "stateMutability": "view",
+                    "type": "function",
+                }
+            ],
+        )
+
+        print("\n🔎 Memeriksa kepemilikan Omnihub NFT...")
+        eligible, skipped = [], []
+        for acc in accounts:
+            try:
+                bal = nft.functions.balanceOf(acc["address"]).call()
+                if int(bal) == 0:
+                    eligible.append(acc)
+                else:
+                    print(f"  ⏭️  Skip {acc['address']} — sudah punya {bal} NFT")
+                    skipped.append(acc)
+            except Exception as e:
+                print(f"  ⚠️  Gagal cek {acc['address']}: {e} → tetap diproses")
+                eligible.append(acc)
+
+        if not eligible:
+            print("✅ Semua akun sudah punya NFT — tidak ada transaksi dikirim.")
+            return {"processed": 0, "skipped": len(skipped), "results": []}
+
+        print(f"🚀 Mint Omnihub NFT ke {len(eligible)} akun")
+        results = self.send_call_batch(
+            accounts=eligible,
+            to=target_contract,
+            data=data,
+            value_wei=value_wei,
+            gas_limit=gas_limit,
+            max_workers=max_workers,
+        )
+
+        return {
+            "processed": len(eligible),
+            "skipped": len(skipped),
+            "results": results,
+        }
+
+
+
     def _send_single_call(self, private_key, from_address, to, data, value_wei, gas_limit, line_number):
         """Kirim single TX call (tanpa tunggu receipt)."""
         try:
